@@ -11,7 +11,7 @@ export const configClientesCollection = (collection: Collection<ClienteT>) => {C
 export const getClientesId = (req: Request, res : Response) => {
     const id = String(req.params.id);
     if(!ObjectId.isValid(id)){res.status(400).json("ID no valido"); return;}
-    ClientesCollection.findOne({_id: new Object(id)}).then((result) => {(!result) ? res.status(404).json({message: "No encontrado"}) : res.json(result); return;})
+    ClientesCollection.findOne({_id: new Object(id)}).then((result) => {(!result) ? res.status(404).json({message: "No encontrado"}) : res.status(200).json(result); return;})
 };
 
 export const getClientes = (req: Request, res : Response) => {
@@ -19,7 +19,7 @@ export const getClientes = (req: Request, res : Response) => {
     const limite = Number(req.query.limite ?? 20);
     const n = (pagina - 1) * limite;
 
-    ClientesCollection.find().skip(n).limit(limite).toArray().then((result) => {res.json(result)}).catch(() => res.status(500).json({error: "Error inesperado"}));
+    ClientesCollection.find().skip(n).limit(limite).toArray().then((result) => {res.status(200).json(result)}).catch(() => res.status(500).json({error: "Error inesperado"}));
 };  
 
 export const postClientes = (req: Request, res : Response) => {
@@ -40,11 +40,11 @@ export const postClientes = (req: Request, res : Response) => {
     if (typeof Cliente.dni !== "string" || Cliente.dni.length !== 9) {res.status(400).json({ error: "DNI inválido" }); return;}
     let cont = 1;
     for(let caracter of Cliente.dni){
-        if(cont === 9 && typeof caracter != "string"){break;}
-        else{res.status(400).json({ error: "DNI inválido" }); return;}
+        if(cont === 9 && (caracter >= 'A' && caracter <= 'Z')){break;}
+        else{
+            if(caracter >= "0" && caracter <= "9"){cont++; continue;}            
+            res.status(400).json({ error: "DNI inválido" }); return;}
 
-        if(caracter >= "0" && caracter <= "9"){cont++;}
-        else{res.status(400).json({ error: "DNI inválido" }); return;}
     }
 
     ClientesCollection.insertOne(Cliente).then((result)=>{res.status(201).json({ message: `Cliente con nombre ${Cliente.nombre} y id ${result.insertedId} ha sido insertado`})}).catch((error) => {res.status(500).json({error: "Error al crear el cliente"})});
@@ -61,5 +61,5 @@ export const patchClientesId = (req: Request, res : Response) => {
             res.status(201).json({ message: `Cliente modificado`});
             ClientesCollection.replaceOne({ _id: new ObjectId(idBuscado) }, ClienteActualizado);
         }
-    }).catch((error) => {res.status(500).json({error: "Error al modificar el cliente"})});
+    }).catch((error) => {res.status(500).json({error: "Error al modificar el cliente"}); console.log(error);});
 }
